@@ -10,5 +10,5 @@ const (
 // AFK config file constants
 const (
 	AFK_CONFIG_DIR_NAME string = "afk"
-	AFK_CONFIG_FILENAME string = ".afk.config.toml"
+	AFK_CONFIG_FILENAME string = "config.toml"
 )

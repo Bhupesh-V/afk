@@ -1,0 +1,58 @@
+[user]
+
+# How should afk decide on which duration to pick?
+# min: always take the minimum duration from your preset durations list
+# max: always take the maximum duration from your preset durations list
+# Default: max (we be greedy as hell)
+durationStrategy = "min or max"
+
+# Does your slack presence follow your status?
+# true: afk will mark you away when you are AFK.
+# false: afk will not touch your presence status as all.
+# Default: false
+presence = false
+
+## Here we define all your status presets
+
+# The preset "eat" can be triggered using command: `afk eat`
+[presets.eat]
+# Default Config for eat
+text = "On Lunch"
+emojis = [":cook:", ":knife_fork_plate:", ":sandwich:", ":stuffed_flatbread:"]
+durations = ["40m", "1h"]
+# Day Specific Config for eat
+schedule = [
+    { day = "Monday", text = "Monday left me broken ... 🎶" },
+    { day = "Tuesday", text = "Tuesday I was through with hoping ... 🎶" },
+    { day = "Wednesday", text = "Wednesday my empty arms were open ... 🎶" },
+    { day = "Thursday", text = "Thursday waiting for love, waiting for love ... 🎶" },
+    { day = "Friday", text = "Thank the stars it's Friday ... 🎶" },
+]
+
+[presets.afk]
+text = "AFK"
+emojis = [":four_leaf_clover:", ":person_in_lotus_position:", ":sunflower:"]
+durations = ["30m"]
+schedule = [
+    { day = "Friday", text = "Prayer", durations = [
+        "1h",
+    ], emojis = [
+        ":grass:",
+    ] },
+]
+
+[presets.ooo]
+text = "Out of Office"
+emojis = [":palm_tree:", ":beach_with_umbrella:", ":no_entry:"]
+
+[presets.travel]
+text = "Travelling"
+emojis = [":airplane:", ":red_car:", ":auto_rickshaw:"]
+
+[presets.sick]
+text = "Out Sick"
+emojis = [":pill:", ":mask:", ":face_with_thermometer:"]
+
+[presets.crime]
+text = "Committing Crime (Dont't report to HR 🔫)"
+emojis = [":supervillain:", ":japanese_goblin:", ":shushing_face:"]
