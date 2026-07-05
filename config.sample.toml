@@ -1,12 +1,14 @@
 [user]
 
 # How should afk decide on which duration to pick?
+#
 # min: always take the minimum duration from your preset durations list
 # max: always take the maximum duration from your preset durations list
 # Default: max (we be greedy as hell)
-durationStrategy = "min or max"
+durationStrategy = "max"
 
 # Does your slack presence follow your status?
+#
 # true: afk will mark you away when you are AFK.
 # false: afk will not touch your presence status as all.
 # Default: false
@@ -54,5 +56,5 @@ text = "Out Sick"
 emojis = [":pill:", ":mask:", ":face_with_thermometer:"]
 
 [presets.crime]
-text = "Committing Crime (Dont't report to HR 🔫)"
+text = "Committing Crime (Don't report to HR 🔫)"
 emojis = [":supervillain:", ":japanese_goblin:", ":shushing_face:"]

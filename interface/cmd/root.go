@@ -1,8 +1,12 @@
 package cmd
 
 import (
+	"afk/internal/afk"
+	"afk/internal/clients/slack"
+	"afk/internal/config"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -22,10 +26,18 @@ var rootCmd = &cobra.Command{
 			duration = args[1]
 		}
 
-		fmt.Printf("Dynamic Command: %s\n", command)
-		fmt.Printf("Dynamic Value:   %s\n", duration)
-		// afk := afk.New()
-		// afk.GetConfig()
+		// fmt.Printf("Dynamic Command: %s\n", command)
+		// fmt.Printf("Dynamic Value:   %s\n", duration)
+
+		config, _ := config.New()
+		slackClient := slack.New()
+		afk := afk.New(config, slackClient)
+
+		if strings.EqualFold(command, "clear") {
+			afk.ClearStatus()
+		} else {
+			afk.UpdateStatus(command, duration)
+		}
 	},
 }
 

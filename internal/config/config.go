@@ -15,13 +15,46 @@ type Config struct {
 }
 
 type UserSection struct {
-	PickDuration string `toml:"pickDuration"`
+	DurationStrategy string `toml:"durationStrategy"`
+	Presence         bool   `toml:"presence"`
+}
+
+type ScheduleItem struct {
+	Day       string   `toml:"day"`
+	Text      string   `toml:"text,omitempty"`
+	Emojis    []string `toml:"emojis,omitempty"`
+	Durations []string `toml:"durations,omitempty"`
 }
 
 type PresetItem struct {
-	Text      string   `toml:"text"`
-	Emojis    []string `toml:"emojis,omitempty"`
-	Durations []string `toml:"durations"`
+	Text      string         `toml:"text"`
+	Emojis    []string       `toml:"emojis,omitempty"`
+	Durations []string       `toml:"durations,omitempty"`
+	Schedule  []ScheduleItem `toml:"schedule,omitempty"`
+}
+
+// Validate ensures that no text field in defaults or schedules exceeds 100 characters.
+func (c *Config) Validate() error {
+	// TODO: validate emoji strings
+	// TODO: validate duration strings
+
+	const maxLen = entities.SLACK_MAX_TEXT_LENGTH
+
+	for name, preset := range c.Presets {
+		// Check default preset text length
+		if len(preset.Text) > maxLen {
+			return fmt.Errorf("preset [%s] text exceeds max length of %d (got %d chars)", name, maxLen, len(preset.Text))
+		}
+
+		// Check each day-specific schedule text length as well
+		for _, schedule := range preset.Schedule {
+			if len(schedule.Text) > maxLen {
+				return fmt.Errorf("preset [%s] schedule for %s text exceeds max length of %d (got %d chars)", name, schedule.Day, maxLen, len(schedule.Text))
+			}
+		}
+	}
+
+	return nil
 }
 
 func New() (Config, error) {
@@ -31,21 +64,18 @@ func New() (Config, error) {
 	}
 	data, err := os.ReadFile(cfgFile)
 	if err != nil {
-		panic(fmt.Errorf("failed to read file: %w", err))
+		return Config{}, fmt.Errorf("failed to read config: %w", err)
 	}
 
 	var cfg Config
 	err = toml.Unmarshal(data, &cfg)
 	if err != nil {
-		panic(fmt.Errorf("failed to unmarshal TOML: %w", err))
+		return Config{}, fmt.Errorf("config validation failed: %w", err)
 	}
 
-	// fmt.Printf("Pick Duration Strategy: %s\n", cfg.User.PickDuration)
-
-	// fmt.Println("\nAvailable Presets:")
-	// for name, preset := range cfg.Presets {
-	// 	fmt.Printf("- [%s]: %s (Durations: %v)\n", name, preset.Text, preset.Durations)
-	// }
+	if err := cfg.Validate(); err != nil {
+		return Config{}, fmt.Errorf("config validation failed: %w", err)
+	}
 
 	return cfg, nil
 }
