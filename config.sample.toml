@@ -53,8 +53,12 @@ emojis = [":airplane:", ":red_car:", ":auto_rickshaw:"]
 
 [presets.sick]
 text = "Out Sick"
-emojis = [":pill:", ":mask:", ":face_with_thermometer:"]
+emojis = [":pill:", ":mask:", ":face_with_thermometer:", ":sneezing_face:"]
 
 [presets.crime]
 text = "Committing Crime (Don't report to HR 🔫)"
 emojis = [":supervillain:", ":japanese_goblin:", ":shushing_face:"]
+
+[presets.aura]
+text = "Aura Farming"
+emojis = [":moyai:"]
