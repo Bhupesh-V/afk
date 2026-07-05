@@ -28,14 +28,15 @@ func GetConfigPath(filename string) (string, error) {
 	}
 
 	configDir := filepath.Join(baseDir, entities.AFK_CONFIG_DIR_NAME)
-	// 1. Ensure the parent directory exists
+
+	// Ensure the parent directory exists
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		return "", fmt.Errorf("failed to create config directory: %w", err)
 	}
 
 	fullPath := filepath.Join(configDir, filename)
 
-	// 2. Ensure the actual file exists without truncating/clearing it if it already has data
+	// Ensure the actual file exists without truncating/clearing it if it already has data
 	file, err := os.OpenFile(fullPath, os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return "", fmt.Errorf("failed to create config file: %w", err)

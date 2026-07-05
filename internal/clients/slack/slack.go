@@ -1,7 +1,6 @@
 package slack
 
 import (
-	"fmt"
 	"log"
 	"sync"
 
@@ -36,7 +35,6 @@ func (s *slackDep) SetUserCustomStatus(tokens map[string]string, text, emoji str
 				log.Printf("Failed to update status for team %s...: %v", teamName, err)
 				return // Exits this specific concurrent worker task cleanly
 			}
-			fmt.Printf("Successfully updated status using team %s...\n", teamName)
 		})
 	}
 
@@ -60,7 +58,6 @@ func (s *slackDep) ClearStatus(tokens map[string]string) error {
 				log.Printf("Failed to update status for team %s...: %v", teamName, err)
 				return // Exits this specific concurrent worker task cleanly
 			}
-			fmt.Printf("Successfully updated status using team %s...\n", teamName)
 		})
 	}
 

@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -23,4 +24,27 @@ func GetTimeDurationFromRelativeDate(s string) (time.Duration, error) {
 	}
 
 	return d.ToTimeDuration(), nil
+}
+
+func GetMaxDurationFromRelativeDates(dates []string) (time.Duration, error) {
+	var durations []time.Duration
+
+	for _, d := range dates {
+		dt, err := GetTimeDurationFromRelativeDate(d)
+		if err != nil {
+			return 0, err
+		}
+		durations = append(durations, dt)
+	}
+
+	return slices.Max(durations), nil
+}
+
+func IsValidRelativeDate(s string) bool {
+	_, err := GetTimeDurationFromRelativeDate(s)
+
+	if err != nil {
+		return false
+	}
+	return true
 }

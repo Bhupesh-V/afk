@@ -12,13 +12,15 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:     "afk",
-	Short:   "Set AKF slack status across workspaces",
-	Long:    "afk is a CLI to configure slack status across multiple workspaces",
-	Example: "afk eat 1h\nafk afk 67m",
-	Version: "1.0.0",
-	Args:    cobra.RangeArgs(1, 2),
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:           "afk",
+	Short:         "Set AKF slack status across workspaces",
+	Long:          "afk is a CLI to configure slack status across multiple workspaces",
+	Example:       "afk eat 1h\nafk afk 67m",
+	Version:       "1.0.0",
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Args:          cobra.RangeArgs(1, 2),
+	RunE: func(cmd *cobra.Command, args []string) error {
 		command := args[0]
 		var duration string
 
@@ -29,7 +31,10 @@ var rootCmd = &cobra.Command{
 		// fmt.Printf("Dynamic Command: %s\n", command)
 		// fmt.Printf("Dynamic Value:   %s\n", duration)
 
-		config, _ := config.New()
+		config, err := config.New()
+		if err != nil {
+			return err
+		}
 		slackClient := slack.New()
 		afk := afk.New(config, slackClient)
 
@@ -38,12 +43,13 @@ var rootCmd = &cobra.Command{
 		} else {
 			afk.UpdateStatus(command, duration)
 		}
+		return nil
 	},
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, "afk got some issues\n%v\n", err)
 		os.Exit(1)
 	}
 }

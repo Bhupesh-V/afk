@@ -3,12 +3,14 @@ package config
 import (
 	"afk/internal/entities"
 	"afk/pkg"
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/pelletier/go-toml/v2"
 )
 
+// TODO: use "comment" struct tag on each field
 type Config struct {
 	User    UserSection           `toml:"user"`
 	Presets map[string]PresetItem `toml:"presets"`
@@ -35,26 +37,20 @@ type PresetItem struct {
 
 // Validate ensures that no text field in defaults or schedules exceeds 100 characters.
 func (c *Config) Validate() error {
-	// TODO: validate emoji strings
-	// TODO: validate duration strings
+	var errs []error
 
-	const maxLen = entities.SLACK_MAX_TEXT_LENGTH
+	for name, item := range c.Presets {
+		textErrors := c.validateText(item, name)
+		errs = append(errs, textErrors...)
 
-	for name, preset := range c.Presets {
-		// Check default preset text length
-		if len(preset.Text) > maxLen {
-			return fmt.Errorf("preset [%s] text exceeds max length of %d (got %d chars)", name, maxLen, len(preset.Text))
-		}
+		emojiErrors := c.validateEmojis(item, name)
+		errs = append(errs, emojiErrors...)
 
-		// Check each day-specific schedule text length as well
-		for _, schedule := range preset.Schedule {
-			if len(schedule.Text) > maxLen {
-				return fmt.Errorf("preset [%s] schedule for %s text exceeds max length of %d (got %d chars)", name, schedule.Day, maxLen, len(schedule.Text))
-			}
-		}
+		durationErrors := c.validateDurations(item, name)
+		errs = append(errs, durationErrors...)
 	}
 
-	return nil
+	return errors.Join(errs...)
 }
 
 func New() (Config, error) {
@@ -78,4 +74,55 @@ func New() (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func (c *Config) validateText(preset PresetItem, name string) []error {
+	const maxLen = entities.SLACK_MAX_TEXT_LENGTH
+	var errs []error
+
+	if len(preset.Text) > maxLen {
+		errs = append(errs, fmt.Errorf("preset [%s] text exceeds max length of %d (got %d chars)", name, maxLen, len(preset.Text)))
+	}
+
+	// Check each day-specific schedule text length as well
+	for _, schedule := range preset.Schedule {
+		if len(schedule.Text) > maxLen {
+			errs = append(errs, fmt.Errorf("preset [%s] schedule for %s text exceeds max length of %d (got %d chars)", name, schedule.Day, maxLen, len(schedule.Text)))
+		}
+	}
+
+	return errs
+}
+
+func (c *Config) validateEmojis(preset PresetItem, name string) []error {
+	var errs []error
+
+	if len(preset.Emojis) == 0 {
+		errs = append(errs, fmt.Errorf("missing default emoji on preset [%s]", name))
+	}
+
+	// TODO: check emoji name
+
+	return errs
+}
+
+func (c *Config) validateDurations(preset PresetItem, name string) []error {
+	var errs []error
+	var allDates []string
+
+	if len(preset.Durations) > 0 {
+		allDates = append(allDates, preset.Durations...)
+	}
+
+	for _, sch := range preset.Schedule {
+		allDates = append(allDates, sch.Durations...)
+	}
+
+	for _, d := range allDates {
+		if !pkg.IsValidRelativeDate(d) {
+			errs = append(errs, fmt.Errorf("found invalid duration [%s] on preset [%s]", d, name))
+		}
+	}
+
+	return errs
 }

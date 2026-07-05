@@ -31,7 +31,7 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 	tokens, err := a.getTokens()
 	if err != nil || tokens == nil {
 		// everything falls apart if we can't interact with keychain
-		return fmt.Errorf("Couldn't get secrets from system's keychain")
+		return fmt.Errorf("couldn't get secrets from system's keychain")
 	}
 
 	var text, emoji, duration string
@@ -60,7 +60,7 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 						duration = maxDuration(val.Durations)
 						break
 					} else {
-						fmt.Printf("No duration supplied in config or cli for preset %s\n", preset)
+						fmt.Printf("No duration supplied in config or CLI for preset %s\n", preset)
 					}
 				}
 			}
@@ -72,9 +72,6 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 				if len(val.Emojis) > 0 {
 					emoji = random(val.Emojis)
 					break
-				} else {
-					// TODO: add no emoji check in config validator
-					fmt.Println("No emoji present")
 				}
 			}
 		}
@@ -89,7 +86,12 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 		return err
 	}
 
-	err = slack.New().SetUserCustomStatus(tokens, text, emoji, time.Now().Add(durationUnix).Unix())
+	err = slack.New().SetUserCustomStatus(
+		tokens,
+		text,
+		fmt.Sprintf(":%s:", emoji),
+		time.Now().Add(durationUnix).Unix(),
+	)
 	if err != nil {
 		return err
 	}
@@ -116,6 +118,10 @@ func random(items []string) string {
 }
 
 func maxDuration(items []string) string {
-	// TODO: write logic to sort items by duration and pick max
-	return ""
+	max, err := pkg.GetMaxDurationFromRelativeDates(items)
+	if err != nil {
+		return ""
+	}
+
+	return max.String()
 }
