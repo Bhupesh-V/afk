@@ -7,13 +7,15 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mrosales/emoji-go"
 	"github.com/pelletier/go-toml/v2"
 )
 
 // TODO: use "comment" struct tag on each field
 type Config struct {
-	User    UserSection           `toml:"user"`
-	Presets map[string]PresetItem `toml:"presets"`
+	emojiIndex *emoji.SearchIndex
+	User       UserSection           `toml:"user"`
+	Presets    map[string]PresetItem `toml:"presets"`
 }
 
 type UserSection struct {
@@ -66,11 +68,13 @@ func New() (Config, error) {
 	var cfg Config
 	err = toml.Unmarshal(data, &cfg)
 	if err != nil {
-		return Config{}, fmt.Errorf("config validation failed: %w", err)
+		return Config{}, fmt.Errorf("config validation failed:\n%w", err)
 	}
 
+	cfg.emojiIndex = emoji.NewSearchIndex()
+
 	if err := cfg.Validate(); err != nil {
-		return Config{}, fmt.Errorf("config validation failed: %w", err)
+		return Config{}, fmt.Errorf("config validation failed:\n%w", err)
 	}
 
 	return cfg, nil
@@ -101,7 +105,32 @@ func (c *Config) validateEmojis(preset PresetItem, name string) []error {
 		errs = append(errs, fmt.Errorf("missing default emoji on preset [%s]", name))
 	}
 
-	// TODO: check emoji name
+	// collect all emojis
+	var emojis []string
+	emojis = append(emojis, preset.Emojis...)
+
+	for _, sch := range preset.Schedule {
+		emojis = append(emojis, sch.Emojis...)
+	}
+
+	// search them in our dataset
+	for _, e := range emojis {
+		info := c.emojiIndex.Search(e, emoji.WithMaxDistance(0), emoji.WithLimit(1))
+
+		exactMatchFound := false
+		if len(info) > 0 {
+			for _, name := range info[0].AlternateNames {
+				if name == e {
+					exactMatchFound = true
+					break
+				}
+			}
+		}
+
+		if !exactMatchFound {
+			errs = append(errs, fmt.Errorf("invalid emoji [%s] on preset [%s]", e, name))
+		}
+	}
 
 	return errs
 }
