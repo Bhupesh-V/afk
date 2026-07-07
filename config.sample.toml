@@ -1,12 +1,5 @@
 [user]
 
-# How should afk decide on which duration to pick?
-#
-# min - always take the minimum duration from your preset durations list
-# max - always take the maximum duration from your preset durations list
-# Default - max (we be greedy as hell)
-durationStrategy = "max"
-
 # Does your slack presence follow your status?
 #
 # true - afk will mark you away when you are AFK.
@@ -20,8 +13,8 @@ presence = false
 [presets.eat]
 # Default Config for eat
 text = "On Lunch"
+duration = "1h"
 emojis = ["cook", "knife_fork_plate", "sandwich", "stuffed_flatbread"]
-durations = ["40m", "1h"]
 # Day Specific Config for eat
 schedule = [
     { day = "Monday", text = "Monday left me broken ... 🎶" },
@@ -35,32 +28,41 @@ schedule = [
 
 [presets.afk]
 text = "AFK"
-emojis = ["four_leaf_clover", "person_in_lotus_position", "sunflower"]
-durations = ["30m"]
-schedule = [
-    { day = "Friday", text = "Prayer", durations = [
-        "1h",
-    ], emojis = [
-        "grass",
-    ] },
+duration = "30m"
+emojis = [
+    "four_leaf_clover",
+    "person_in_lotus_position",
+    "sunflower",
+    "potted_plant",
 ]
+schedule = [{ day = "Friday", text = "Prayer", emojis = ["seedling"] }]
 
 [presets.ooo]
 text = "Out of Office"
-emojis = ["palm_tree", "beach_with_umbrella", "no_entry"]
+duration = "3w"
+emojis = ["palm_tree", "beach_with_umbrella", "no_entry", "no_bell"]
 
 [presets.travel]
 text = "Travelling"
+duration = "2h"
 emojis = ["airplane", "red_car", "auto_rickshaw"]
 
 [presets.sick]
 text = "Out Sick"
-emojis = ["pill", "mask", "face_with_thermometer", "sneezing_face"]
+duration = "2d"
+emojis = ["pill", "mask", "face_with_thermometer", "sneezing_face", "microbe"]
 
 [presets.crime]
 text = "Committing Crime (don't report to HR 🔫)"
+duration = "666s"
 emojis = ["supervillain", "japanese_goblin", "shushing_face"]
 
 [presets.aura]
 text = "Aura Farming (don't tell my mum)"
-emojis = ["moyai"]
+duration = "35m"
+emojis = ["moyai", "male_genie"]
+
+[preset.focus]
+text = "Focusing (Locked In)"
+duration = "1h"
+emojis = ["dart", "headphones", "brain"]

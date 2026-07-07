@@ -14,10 +14,10 @@
 
 ## Why not?
 
-- Initial friction while setting up the app (see [below](#setup)) in workspaces you want to operate on.
+- Initial friction while setting up the app (see [setup](#setup)) in workspaces you want to operate on.
 - Possible disapproval by slack workspace admins.
   - Admins can kick any app, I recommend not telling them in advance, if they find it, explain why you need it (check readme header).
-- Workspace App Limit, For FREE plan, slack has a limit of 10 apps, if you are in luck, you can setup afk. For Pro/Enterprise plans, there's no limit. However, I recommend not talking about `afk` to your colleagues (image a 100 afk-bots on a slack workspace 😬)
+- Workspace App Limit, For FREE plan, slack has a limit of 10 apps, if you are in luck, you can setup afk. For Pro/Enterprise plans, there's no limit. However, I recommend not talking about `afk` to your colleagues (imagine 100 afk-bots on a slack workspace 😬)
 
 <!-- - You have a better workflow setup. -->
 <!-- - You are not lazy to update your status. -->

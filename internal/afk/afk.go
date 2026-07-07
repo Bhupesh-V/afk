@@ -43,7 +43,6 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 				if strings.EqualFold(weekday.String(), item.Day) {
 					text = item.Text
 					emoji = random(item.Emojis)
-					duration = maxDuration(item.Durations)
 					break
 				}
 			}
@@ -56,8 +55,8 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 			if duration == "" {
 				// find from default preset config
 				for _, val := range a.config.Presets {
-					if len(val.Durations) > 0 {
-						duration = maxDuration(val.Durations)
+					if val.Duration != "" {
+						duration = val.Duration
 						break
 					} else {
 						fmt.Printf("No duration supplied in config or CLI for preset %s\n", preset)
@@ -115,13 +114,4 @@ func (a *afk) getTokens() (map[string]string, error) {
 
 func random(items []string) string {
 	return items[rand.IntN(len(items))]
-}
-
-func maxDuration(items []string) string {
-	max, err := pkg.GetMaxDurationFromRelativeDates(items)
-	if err != nil {
-		return ""
-	}
-
-	return max.String()
 }

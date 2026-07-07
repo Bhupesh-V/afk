@@ -24,17 +24,16 @@ type UserSection struct {
 }
 
 type ScheduleItem struct {
-	Day       string   `toml:"day"`
-	Text      string   `toml:"text,omitempty"`
-	Emojis    []string `toml:"emojis,omitempty"`
-	Durations []string `toml:"durations,omitempty"`
+	Day    string   `toml:"day"`
+	Text   string   `toml:"text,omitempty"`
+	Emojis []string `toml:"emojis,omitempty"`
 }
 
 type PresetItem struct {
-	Text      string         `toml:"text"`
-	Emojis    []string       `toml:"emojis,omitempty"`
-	Durations []string       `toml:"durations,omitempty"`
-	Schedule  []ScheduleItem `toml:"schedule,omitempty"`
+	Text     string         `toml:"text"`
+	Emojis   []string       `toml:"emojis,omitempty"`
+	Duration string         `toml:"duration,omitempty"`
+	Schedule []ScheduleItem `toml:"schedule,omitempty"`
 }
 
 // Validate ensures that no text field in defaults or schedules exceeds 100 characters.
@@ -68,13 +67,13 @@ func New() (Config, error) {
 	var cfg Config
 	err = toml.Unmarshal(data, &cfg)
 	if err != nil {
-		return Config{}, fmt.Errorf("config validation failed:\n%w", err)
+		return Config{}, fmt.Errorf("afk config read failed:\n%w", err)
 	}
 
 	cfg.emojiIndex = emoji.NewSearchIndex()
 
 	if err := cfg.Validate(); err != nil {
-		return Config{}, fmt.Errorf("config validation failed:\n%w", err)
+		return Config{}, fmt.Errorf("afk config validation failed:\n%w", err)
 	}
 
 	return cfg, nil
@@ -137,19 +136,18 @@ func (c *Config) validateEmojis(preset PresetItem, name string) []error {
 
 func (c *Config) validateDurations(preset PresetItem, name string) []error {
 	var errs []error
-	var allDates []string
 
-	if len(preset.Durations) > 0 {
-		allDates = append(allDates, preset.Durations...)
+	if preset.Duration != "" {
+		if !pkg.IsValidRelativeDate(preset.Duration) {
+			errs = append(errs, fmt.Errorf("found invalid duration [%s] on preset [%s]", preset.Duration, name))
+		}
+	} else {
+		errs = append(errs, fmt.Errorf("missing default duration on preset [%s]", name))
 	}
 
 	for _, sch := range preset.Schedule {
-		allDates = append(allDates, sch.Durations...)
-	}
-
-	for _, d := range allDates {
-		if !pkg.IsValidRelativeDate(d) {
-			errs = append(errs, fmt.Errorf("found invalid duration [%s] on preset [%s]", d, name))
+		if !pkg.IsValidDay(sch.Day) {
+			errs = append(errs, fmt.Errorf("found invalid day [%s] on preset [%s]", sch.Day, name))
 		}
 	}
 
