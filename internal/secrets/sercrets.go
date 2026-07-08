@@ -9,9 +9,9 @@ import (
 
 type Secret interface {
 	// GetTokens interacts with user's keyring and orchestrates the token getter logic
-	GetTokens() (map[string]string, error)
+	GetTokens(provider string) (map[string]string, error)
 	// UpdateTokens appends any new token and updates any existing tokens to user's keyring
-	UpdateTokens(map[string]entities.SlackMetaData) error
+	UpdateTokens(tokens map[string]entities.SlackMetaData, provider string) error
 }
 
 type secret struct {
@@ -22,7 +22,7 @@ func New() Secret {
 	return &secret{}
 }
 
-func (s *secret) GetTokens() (map[string]string, error) {
+func (s *secret) GetTokens(provider string) (map[string]string, error) {
 	tokens := make(map[string]string)
 
 	rawTeamIds, err := keyring.GetSecret(entities.KEYRING_SLACK_TEAM_IDS)
@@ -48,7 +48,7 @@ func (s *secret) GetTokens() (map[string]string, error) {
 	return nil, nil
 }
 
-func (s *secret) UpdateTokens(tokens map[string]entities.SlackMetaData) error {
+func (s *secret) UpdateTokens(tokens map[string]entities.SlackMetaData, provider string) error {
 	rawTeamIds, err := keyring.GetSecret(entities.KEYRING_SLACK_TEAM_IDS)
 	if err != nil {
 		return err

@@ -1,5 +1,10 @@
 package entities
 
+// All supported providers
+const (
+	PROVIDER_SLACK string = "slack"
+)
+
 // Names of all AFK secret "keys" being stored in user's system keyring (other than workspace tokens)
 const (
 	KEYRING_APP_NAME            string = "afk"

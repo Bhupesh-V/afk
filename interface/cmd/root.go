@@ -4,6 +4,7 @@ import (
 	"afk/internal/afk"
 	"afk/internal/clients/slack"
 	"afk/internal/config"
+	"afk/internal/secrets"
 	"fmt"
 	"os"
 	"strings"
@@ -30,13 +31,13 @@ var rootCmd = &cobra.Command{
 
 		// fmt.Printf("Dynamic Command: %s\n", command)
 		// fmt.Printf("Dynamic Value:   %s\n", duration)
-
+		s := secrets.New()
 		config, err := config.New()
 		if err != nil {
 			return err
 		}
 		// TODO find tokens from secret
-		slackClient := slack.New(map[string]string{})
+		slackClient := slack.New(s)
 		afk := afk.New(config, slackClient)
 
 		if strings.EqualFold(command, "clear") {

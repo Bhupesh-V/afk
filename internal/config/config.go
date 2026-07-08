@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mrosales/emoji-go"
 	"github.com/pelletier/go-toml/v2"
@@ -40,6 +41,12 @@ type PresetItem struct {
 // Validate ensures that no text field in defaults or schedules exceeds 100 characters.
 func (c *Config) Validate() error {
 	var errs []error
+
+	switch strings.ToLower(strings.TrimSpace(c.User.Provider)) {
+	case entities.PROVIDER_SLACK:
+	default:
+		errs = append(errs, fmt.Errorf("invalid/unsupported provider [%s] in config", c.User.Provider))
+	}
 
 	for name, item := range c.Presets {
 		textErrors := c.validateText(item, name)
