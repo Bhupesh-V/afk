@@ -28,12 +28,6 @@ func New(config config.Config, slack slack.Slack) Afk {
 }
 
 func (a *afk) UpdateStatus(preset, presetDuration string) error {
-	tokens, err := a.getTokens()
-	if err != nil || tokens == nil {
-		// everything falls apart if we can't interact with keychain
-		return fmt.Errorf("couldn't get secrets from system's keychain")
-	}
-
 	var text, emoji, duration string
 	if val, ok := a.config.Presets[preset]; ok {
 		weekday := time.Now().Weekday()
@@ -85,8 +79,7 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 		return err
 	}
 
-	err = slack.New().SetUserCustomStatus(
-		tokens,
+	err = a.slack.SetUserCustomStatus(
 		text,
 		fmt.Sprintf(":%s:", emoji),
 		time.Now().Add(durationUnix).Unix(),
@@ -99,17 +92,7 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 }
 
 func (a *afk) ClearStatus() error {
-	tokens, err := a.getTokens()
-	if err != nil {
-		return err
-	}
-
-	return a.slack.ClearStatus(tokens)
-}
-
-func (a *afk) getTokens() (map[string]string, error) {
-	// TODO: figure out tokens
-	return nil, nil
+	return a.slack.ClearStatus()
 }
 
 func random(items []string) string {

@@ -35,7 +35,8 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		slackClient := slack.New()
+		// TODO find tokens from secret
+		slackClient := slack.New(map[string]string{})
 		afk := afk.New(config, slackClient)
 
 		if strings.EqualFold(command, "clear") {

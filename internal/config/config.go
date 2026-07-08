@@ -19,8 +19,7 @@ type Config struct {
 }
 
 type UserSection struct {
-	DurationStrategy string `toml:"durationStrategy"`
-	Presence         bool   `toml:"presence"`
+	Provider string `toml:"provider"`
 }
 
 type ScheduleItem struct {
@@ -30,10 +29,12 @@ type ScheduleItem struct {
 }
 
 type PresetItem struct {
-	Text     string         `toml:"text"`
-	Emojis   []string       `toml:"emojis,omitempty"`
-	Duration string         `toml:"duration,omitempty"`
-	Schedule []ScheduleItem `toml:"schedule,omitempty"`
+	Text          string         `toml:"text"`
+	Emojis        []string       `toml:"emojis,omitempty"`
+	Duration      string         `toml:"duration,omitempty"`
+	Presence      string         `toml:"presence,omitempty"`
+	Notifications string         `toml:"notifications,omitempty"`
+	Schedule      []ScheduleItem `toml:"schedule,omitempty"`
 }
 
 // Validate ensures that no text field in defaults or schedules exceeds 100 characters.
