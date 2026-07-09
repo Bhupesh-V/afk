@@ -36,7 +36,9 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 			for _, item := range val.Schedule {
 				if strings.EqualFold(weekday.String(), item.Day) {
 					text = item.Text
-					emoji = random(item.Emojis)
+					if len(item.Emojis) > 0 {
+						emoji = random(item.Emojis)
+					}
 					break
 				}
 			}
@@ -46,16 +48,10 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 			// priority to CLI value
 			duration = presetDuration
 		} else {
-			if duration == "" {
-				// find from default preset config
-				for _, val := range a.config.Presets {
-					if val.Duration != "" {
-						duration = val.Duration
-						break
-					} else {
-						fmt.Printf("No duration supplied in config or CLI for preset %s\n", preset)
-					}
-				}
+			if val.Duration != "" {
+				duration = val.Duration
+			} else {
+				fmt.Printf("No duration supplied in config or CLI for preset %s\n", preset)
 			}
 		}
 
@@ -74,7 +70,7 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 		// TODO create new one by starting a questionaire
 	}
 
-	durationUnix, err := pkg.GetTimeDurationFromRelativeDate(duration)
+	durationUnix, err := pkg.ParseDuration(duration)
 	if err != nil {
 		return err
 	}

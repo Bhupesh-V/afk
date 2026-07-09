@@ -24,4 +24,5 @@ const (
 // Slack specific constants
 const (
 	SLACK_MAX_TEXT_LENGTH int = 100
+	SLACK_AUTHORIZER_PORT int = 8080
 )

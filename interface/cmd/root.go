@@ -7,10 +7,12 @@ import (
 	"afk/internal/secrets"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
+
+var setup bool
+var clear bool
 
 var rootCmd = &cobra.Command{
 	Use:           "afk",
@@ -20,31 +22,48 @@ var rootCmd = &cobra.Command{
 	Version:       "1.0.0",
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	Args:          cobra.RangeArgs(1, 2),
+	// Args:          cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		command := args[0]
+		s := secrets.New()
+		config, err := config.New()
+		if err != nil {
+			return err
+		}
+
+		slackClient, err := slack.New(s)
+		if err != nil {
+			return err
+		}
+		afk := afk.New(config, slackClient)
+
+		// Check if --setup flag was explicitly called
+		if cmd.Flags().Changed("setup") {
+			fmt.Println("Running setup wizard...")
+			// TODO: Add your setup logic here (e.g., afkApp.RunSetup())
+			return nil
+		}
+
+		if cmd.Flags().Changed("clear") {
+			afk.ClearStatus()
+			return nil
+		}
+
+		if len(args) < 1 || len(args) > 2 {
+			return fmt.Errorf("accepts between 1 and 2 arg(s), received %d", len(args))
+		}
+
+		preset := args[0]
 		var duration string
 
 		if len(args) > 1 {
 			duration = args[1]
 		}
 
-		// fmt.Printf("Dynamic Command: %s\n", command)
-		// fmt.Printf("Dynamic Value:   %s\n", duration)
-		s := secrets.New()
-		config, err := config.New()
+		err = afk.UpdateStatus(preset, duration)
 		if err != nil {
 			return err
 		}
-		// TODO find tokens from secret
-		slackClient := slack.New(s)
-		afk := afk.New(config, slackClient)
 
-		if strings.EqualFold(command, "clear") {
-			afk.ClearStatus()
-		} else {
-			afk.UpdateStatus(command, duration)
-		}
 		return nil
 	},
 }
@@ -54,4 +73,9 @@ func Execute() {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
+}
+
+func init() {
+	rootCmd.Flags().BoolVarP(&setup, "setup", "s", false, "Setup afk and providers")
+	rootCmd.Flags().BoolVarP(&clear, "clear", "c", false, "Clear any/all AFK status")
 }

@@ -29,16 +29,16 @@ type slackDep struct {
 	secrets  secrets.Secret
 }
 
-func New(secrets secrets.Secret) Slack {
+func New(secrets secrets.Secret) (Slack, error) {
 	tokens, err := secrets.GetTokens(entities.PROVIDER_SLACK)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("failed to fetch slack tokens: %w", err)
 	}
 
 	return &slackDep{
 		uwTokens: tokens,
 		secrets:  secrets,
-	}
+	}, nil
 }
 
 func (s *slackDep) SetUserCustomStatus(text, emoji string, expiration int64) error {
@@ -142,7 +142,7 @@ func (s *slackDep) ToggleNotifications(enabled bool, minutes int) error {
 }
 
 func (s *slackDep) Authorize(clientID, clientSecret string) (string, error) {
-	redirectURI := "https://localhost:8080/oauth/callback"
+	redirectURI := fmt.Sprintf("https://localhost:%d/oauth/callback", entities.SLACK_AUTHORIZER_PORT)
 	scopes := "users.profile:write users:write dnd:write"
 
 	base, _ := url.Parse("https://slack.com/oauth/v2/authorize")
@@ -166,7 +166,7 @@ func (s *slackDep) Authorize(clientID, clientSecret string) (string, error) {
 
 	// Create the server object and supply the TLSConfig holding your in-memory certificate
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    fmt.Sprintf(":%d", entities.SLACK_AUTHORIZER_PORT),
 		Handler: mux,
 		TLSConfig: &tls.Config{
 			Certificates: []tls.Certificate{tlsCert},
@@ -199,7 +199,7 @@ func (s *slackDep) Authorize(clientID, clientSecret string) (string, error) {
 		}
 	})
 
-	log.Println("Starting server on :8080")
+	log.Printf("Starting server on :%d\n", entities.SLACK_AUTHORIZER_PORT)
 
 	// Pass empty strings since the certs are already injected via srv.TLSConfig
 	if err := srv.ListenAndServeTLS("", ""); err != http.ErrServerClosed {

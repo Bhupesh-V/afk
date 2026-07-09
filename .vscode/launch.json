@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug AFK",
+      "type": "go",
+      "request": "launch",
+      "mode": "exec",
+      "program": "${workspaceFolder}/afk",
+      "args": [
+        "eat",
+        "1h"
+      ],
+      "preLaunchTask": "Build AFK"
+    }
+  ]
+}
