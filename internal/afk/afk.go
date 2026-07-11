@@ -96,7 +96,11 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 }
 
 func (a *afk) ClearStatus() error {
-	return a.slack.ClearStatus()
+	switch a.config.User.Provider {
+	case entities.PROVIDER_SLACK:
+		return a.slack.ClearStatus()
+	}
+	return nil
 }
 
 func random(items []string) string {

@@ -24,13 +24,11 @@ var rootCmd = &cobra.Command{
 	SilenceErrors: true,
 	// Args:          cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Check if --setup flag was explicitly called
+		var isSetup bool
+
 		if cmd.Flags().Changed("setup") {
-			fmt.Println("Running setup wizard...")
-			// 1. Save client and secret
-			// 2. Run authorizer
-			// 3. Ask user to build a config
-			return nil
+			fmt.Println("Looks like this is your first AFK run, running setup wizard")
+			isSetup = true
 		}
 
 		s := secrets.New()
@@ -39,7 +37,7 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		slackClient, err := slack.New(s)
+		slackClient, err := slack.New(s, isSetup)
 		if err != nil {
 			return err
 		}
