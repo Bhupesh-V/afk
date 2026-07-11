@@ -1,6 +1,6 @@
 # afk
 
-> For remote only teams, profile status on collaboration softwares like slack is an important indicator of your availability, which means those statuses require a well-thought out approach, `afk` is a small step towards taking this small thing a bit seriously!
+> For remote only teams, profile status on collaboration tools like slack is an important indicator of your availability, which means those statuses require a well-thought out approach, `afk` is a small step towards taking this small thing a bit too seriously!
 
 ## Why?
 
@@ -19,8 +19,6 @@
   - Admins can kick any app, I recommend not telling them in advance, if they find it, explain why you need it (check readme header).
 - Workspace App Limit, For FREE plan, slack has a limit of 10 apps, if you are in luck, you can setup afk. For Pro/Enterprise plans, there's no limit. However, I recommend not talking about `afk` to your colleagues (imagine 100 afk-bots on a slack workspace 😬)
 
-<!-- - You have a better workflow setup. -->
-<!-- - You are not lazy to update your status. -->
 
 ## Installation
 
@@ -32,13 +30,15 @@ TODO: Instructions on how to create a slack app
 
 ### Going away
 
-Set lunch status, afk will read expiration time from your config
+> Note: you can build your own status presets, `lunch` below is just an example.
+
+Set lunch status, afk will read expiration default duration from your config
 
 ```
 afk lunch
 ```
 
-afk with custom expiration time, this will be automatically saved for future `afk lunch` invocations.
+afk with custom expiration time, this will be **automatically saved for future `afk lunch` invocations**.
 
 ```
 afk lunch 67m
@@ -52,13 +52,13 @@ afk break 67m
 
 ### Back online
 
-AFK has a special `clear` preset that can be used if you are back early or didn't set an expiration time earlier.
+AFK has a `-c\--clear` flag that can be used if you are back early or didn't set an expiration time earlier.
 
 ```
-afk clear
+afk -c
 ```
 
 ## Future
 
 - Support for Microsoft Teams (bleh)
-- Support for Mattermost (💪🏽)
+- Support for Mattermost

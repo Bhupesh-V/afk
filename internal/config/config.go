@@ -41,12 +41,17 @@ type PresetItem struct {
 // Validate ensures that no text field in defaults or schedules exceeds 100 characters.
 func (c *Config) Validate() error {
 	var errs []error
+	var provider = strings.ToLower(strings.TrimSpace(c.User.Provider))
 
-	switch strings.ToLower(strings.TrimSpace(c.User.Provider)) {
+	switch provider {
 	case entities.PROVIDER_SLACK:
+	case "":
+		errs = append(errs, fmt.Errorf("missing 'provider' in config"))
 	default:
-		errs = append(errs, fmt.Errorf("invalid/unsupported provider [%s] in config", c.User.Provider))
+		errs = append(errs, fmt.Errorf("unsupported provider [%s] in config", c.User.Provider))
 	}
+
+	c.User.Provider = provider
 
 	for name, item := range c.Presets {
 		textErrors := c.validateText(item, name)

@@ -3,15 +3,19 @@ package afk
 import (
 	"afk/internal/clients/slack"
 	"afk/internal/config"
+	"afk/internal/entities"
 	"afk/pkg"
+	"crypto/rand"
 	"fmt"
-	"math/rand/v2"
+	"math/big"
 	"strings"
 	"time"
 )
 
 type Afk interface {
+	// Update user status across configured workspaces
 	UpdateStatus(preset, duration string) error
+	// Clear user status across configured workspaces
 	ClearStatus() error
 }
 
@@ -32,6 +36,7 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 	if val, ok := a.config.Presets[preset]; ok {
 		weekday := time.Now().Weekday()
 
+		// pick emoji and text from 'schedule' if present
 		if len(val.Schedule) > 0 {
 			for _, item := range val.Schedule {
 				if strings.EqualFold(weekday.String(), item.Day) {
@@ -55,8 +60,8 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 			}
 		}
 
+		// pick emoji from default preset config
 		if emoji == "" {
-			// take one from default preset config, if present
 			for _, val := range a.config.Presets {
 				if len(val.Emojis) > 0 {
 					emoji = random(val.Emojis)
@@ -66,7 +71,7 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 		}
 
 	} else {
-		fmt.Println("preset not found")
+		fmt.Printf("preset '%s' not found, winging it!", preset)
 		// TODO create new one by starting a questionaire
 	}
 
@@ -75,13 +80,16 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 		return err
 	}
 
-	err = a.slack.SetUserCustomStatus(
-		text,
-		fmt.Sprintf(":%s:", emoji),
-		time.Now().Add(durationUnix).Unix(),
-	)
-	if err != nil {
-		return err
+	switch a.config.User.Provider {
+	case entities.PROVIDER_SLACK:
+		err = a.slack.SetUserCustomStatus(
+			text,
+			fmt.Sprintf(":%s:", emoji),
+			time.Now().Add(durationUnix).Unix(),
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -92,5 +100,15 @@ func (a *afk) ClearStatus() error {
 }
 
 func random(items []string) string {
-	return items[rand.IntN(len(items))]
+	if len(items) == 0 {
+		return ""
+	}
+
+	n, err := rand.Int(rand.Reader, big.NewInt(int64(len(items))))
+	if err != nil {
+		// crypto/rand should rarely fail unless the system entropy pool is broken
+		panic(err)
+	}
+
+	return items[n.Int64()]
 }

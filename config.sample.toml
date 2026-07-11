@@ -1,12 +1,6 @@
 [user]
 
-provider="slack"
-# Does your slack presence follow your status?
-#
-# true - afk will mark you away when you are AFK.
-# false - afk will not touch your presence status as all.
-# Default - false
-
+provider = "slack"
 
 ## Here we define all your status presets
 

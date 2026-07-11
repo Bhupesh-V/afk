@@ -1,0 +1,5 @@
+## Todo
+
+- Update config dynamically.
+- Refresh slack token in case token rotation is enabled.
+- Fuzzy pick emojis.
