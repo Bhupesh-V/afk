@@ -51,7 +51,7 @@ emojis = ["pill", "mask", "face_with_thermometer", "sneezing_face", "microbe"]
 
 [presets.crime]
 text = "Committing Crime (don't report to HR 🔫)"
-duration = "666s"
+duration = "666m"
 emojis = ["supervillain", "japanese_goblin", "shushing_face"]
 
 [presets.aura]

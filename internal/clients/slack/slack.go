@@ -327,7 +327,7 @@ func (s *slackDep) getTokens() (map[string]string, error) {
 		return nil, err
 	}
 
-	for _, id := range strings.Split(rawTeamIds, ",") {
+	for id := range strings.SplitSeq(rawTeamIds, ",") {
 		tokenKey := fmt.Sprintf("%s_%s", entities.KEYRING_TEAM_SECRET_PREFIX, id)
 		token, err := s.secrets.GetSecret(tokenKey)
 		if err != nil {
@@ -342,7 +342,7 @@ func (s *slackDep) getTokens() (map[string]string, error) {
 		tokens[rawTokens[0]] = rawTokens[1]
 	}
 
-	return nil, nil
+	return tokens, nil
 }
 
 func (s *slackDep) updateTokens(meta *slackEntities.SlackMetaData) error {
@@ -351,7 +351,12 @@ func (s *slackDep) updateTokens(meta *slackEntities.SlackMetaData) error {
 	if err != nil {
 		return err
 	}
+
 	teamIds := strings.Split(rawTeamIds, ",")
+
+	if rawTeamIds == "" {
+		teamIds = []string{}
+	}
 
 	var found bool
 	for _, id := range teamIds {
@@ -359,7 +364,6 @@ func (s *slackDep) updateTokens(meta *slackEntities.SlackMetaData) error {
 			break
 		}
 	}
-	tokenKey := fmt.Sprintf("%s_%s", entities.KEYRING_TEAM_SECRET_PREFIX, meta.TeamID)
 
 	if !found {
 		// save the team id in the team list secret
@@ -370,6 +374,7 @@ func (s *slackDep) updateTokens(meta *slackEntities.SlackMetaData) error {
 		}
 	}
 
+	tokenKey := fmt.Sprintf("%s_%s", entities.KEYRING_TEAM_SECRET_PREFIX, meta.TeamID)
 	// overwrite/create the secret
 	err = s.secrets.SetSecret(tokenKey, fmt.Sprintf("%s|%s", meta.TeamName, meta.WorkspaceToken))
 	if err != nil {

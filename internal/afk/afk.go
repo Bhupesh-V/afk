@@ -62,13 +62,13 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 
 		// pick emoji from default preset config
 		if emoji == "" {
-			for _, val := range a.config.Presets {
-				if len(val.Emojis) > 0 {
-					emoji = random(val.Emojis)
-					break
-				}
+			if len(val.Emojis) > 0 {
+				emoji = random(val.Emojis)
+
 			}
 		}
+
+		text = val.Text
 
 	} else {
 		fmt.Printf("preset '%s' not found, winging it!", preset)
