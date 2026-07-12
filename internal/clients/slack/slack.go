@@ -7,8 +7,11 @@ import (
 	"afk/internal/secrets"
 	"afk/pkg/security"
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/json"
+	"io"
 
 	"fmt"
 	"log"
@@ -75,63 +78,58 @@ func New(secrets secrets.Secret, isSetup bool) (Slack, error) {
 	if isSetup {
 		// TODO Ask user to build a config
 
-		var clientId, clientSecret string
-
-		fmt.Println()
-		fmt.Print("Enter Slack Client Id: ")
-		fmt.Scanln(&clientId)
-
-		fmt.Print("Enter Slack Client Secret: ")
-		fmt.Scanln(&clientSecret)
+		clientId, clientSecret, err := deps.createSlackApp()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create slack app, please try again")
+		}
 
 		if clientId != "" && clientSecret != "" {
 			err := deps.updateAppCreds(clientId, clientSecret)
 			if err != nil {
 				return nil, err
 			}
+
+			fmt.Println("\nLet's install afk to your preferred workspace(s), please follow on-screen instructions")
+
+			var addMore bool = true
+			reader := bufio.NewReader(os.Stdin)
+
+			for addMore {
+				metadata, err := deps.Authorize(clientId, clientSecret)
+				if err != nil {
+					return nil, err
+				}
+				err = deps.updateTokens(metadata)
+				if err != nil {
+					return nil, err
+				}
+
+				fmt.Println()
+				fmt.Print("Add more workspaces? [y/N]: ")
+
+				// Read just the first byte
+				char, err := reader.ReadByte()
+				if err != nil {
+					return nil, fmt.Errorf("failed to read input: %w", err)
+				}
+
+				// If they typed extra characters, flush the rest of the line
+				// so it doesn't bleed into the next loop iteration
+				if char != '\n' {
+					_, _ = reader.ReadString('\n')
+				}
+
+				// Convert byte to lowercase string for easy comparison
+				choice := strings.ToLower(string(char))
+
+				// Default to exit. Only continue if they explicitly typed 'y'
+				if choice != "y" {
+					addMore = false
+				}
+			}
 		} else {
 			return nil, fmt.Errorf("malformed slack app creds, please try again")
 		}
-
-		fmt.Println("\nLet's install afk to your preferred workspace, please follow on-screen instructions")
-
-		var addMore bool = true
-		reader := bufio.NewReader(os.Stdin)
-
-		for addMore {
-			metadata, err := deps.Authorize(clientId, clientSecret)
-			if err != nil {
-				return nil, err
-			}
-			err = deps.updateTokens(metadata)
-			if err != nil {
-				return nil, err
-			}
-
-			fmt.Println()
-			fmt.Print("Add more workspaces? [y/N]: ")
-
-			// Read just the first byte
-			char, err := reader.ReadByte()
-			if err != nil {
-				return nil, fmt.Errorf("failed to read input: %w", err)
-			}
-
-			// If they typed extra characters, flush the rest of the line
-			// so it doesn't bleed into the next loop iteration
-			if char != '\n' {
-				_, _ = reader.ReadString('\n')
-			}
-
-			// Convert byte to lowercase string for easy comparison
-			choice := strings.ToLower(string(char))
-
-			// Default to exit. Only continue if they explicitly typed 'y'
-			if choice != "y" {
-				addMore = false
-			}
-		}
-
 	}
 
 	tokens, err := deps.getTokens()
@@ -147,13 +145,15 @@ func New(secrets secrets.Secret, isSetup bool) (Slack, error) {
 func (s *slackDep) Authorize(clientID, clientSecret string) (*slackEntities.SlackMetaData, error) {
 	metadata := &slackEntities.SlackMetaData{}
 	redirectURI := fmt.Sprintf("https://localhost:%d/oauth/callback", entities.SLACK_AUTHORIZER_PORT)
-	scopes := "users.profile:write users:write dnd:write"
+	botScopes := "users:read"
+	scopes := "users.profile:write,users:write,dnd:write"
 
 	base, _ := url.Parse("https://slack.com/oauth/v2/authorize")
 	params := url.Values{}
 	params.Add("client_id", clientID)
+	params.Add("scope", botScopes)
 	params.Add("user_scope", scopes)
-	params.Add("redirect_uri", redirectURI)
+
 	base.RawQuery = params.Encode()
 
 	fmt.Println()
@@ -339,6 +339,97 @@ func (s *slackDep) ClearStatus() error {
 	wg.Wait()
 
 	return nil
+}
+
+func (s *slackDep) createSlackApp() (clientId, clientSecret string, err error) {
+	clientId, clientSecret, err = s.getAppCreds()
+	if err != nil {
+		return "", "", err
+	}
+	if clientId != "" && clientSecret != "" {
+		return clientId, clientSecret, nil
+	}
+
+	var appConfigurationToken string
+
+	fmt.Println("Looks like this is your first AFK run, running setup wizard")
+	fmt.Println()
+	fmt.Print("Enter Slack App Configuration Access Token: ")
+	fmt.Scanln(&appConfigurationToken)
+
+	manifestStruct := &slack.Manifest{
+		Display: slack.Display{
+			Name:        "AFK",
+			Description: "App used to mark a user availability",
+		},
+		Settings: slack.Settings{},
+		Features: slack.Features{
+			BotUser: slack.BotUser{
+				DisplayName:  "AFK Bot", // Must be more than 0 characters
+				AlwaysOnline: false,
+			},
+		},
+		OAuthConfig: slack.OAuthConfig{
+			RedirectUrls: []string{
+				"https://localhost:8080/oauth/callback",
+			},
+			Scopes: slack.OAuthScopes{
+				Bot: []string{
+					"users:read",
+				},
+				User: []string{
+					"users.profile:write",
+					"users:write",
+					"dnd:write",
+				},
+			},
+		},
+	}
+	apiURL := "https://slack.com/api/apps.manifest.create"
+
+	manifestBytes, err := json.Marshal(manifestStruct)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to marshal manifest layout: %v", err)
+	}
+	manifestJSON := string(manifestBytes)
+
+	// Encode parameters as application/x-www-form-urlencoded
+	data := url.Values{}
+	data.Set("token", appConfigurationToken)
+	data.Set("manifest", manifestJSON)
+
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBufferString(data.Encode()))
+	if err != nil {
+		return "", "", fmt.Errorf("failed to build http request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", "", fmt.Errorf("http communication error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to read stream payload: %v", err)
+	}
+
+	var fullResp slackEntities.FullManifestResponse
+	if err := json.Unmarshal(body, &fullResp); err != nil {
+		return "", "", fmt.Errorf("failed to parse credential fields: %v. Raw body: %s", err, string(body))
+	}
+
+	if !fullResp.Ok {
+		return "", "", fmt.Errorf("slack error: %s (Raw body: %s)", fullResp.Error, string(body))
+	}
+
+	// fmt.Println("Multi-workspace setup:")
+	// fmt.Printf("Open the app: https://api.slack.com/apps/%s/general\n", fullResp.AppID)
+	// fmt.Println("Head over to 'Manage Distribution' and enable 'Public Distribution'")
+
+	return fullResp.Credentials.ClientID, fullResp.Credentials.ClientSecret, nil
 }
 
 func (s *slackDep) getAppCreds() (string, string, error) {

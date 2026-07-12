@@ -17,18 +17,16 @@ var clear bool
 
 var rootCmd = &cobra.Command{
 	Use:           "afk",
-	Short:         "Set AKF slack status across workspaces",
-	Long:          "afk is a CLI to configure slack status across multiple workspaces",
+	Short:         "Set AKF availability status across (slack) workspaces",
+	Long:          "afk is a CLI to configure slack status (text, presence and notifcations) across multiple workspaces",
 	Example:       "afk eat 1h\nafk afk 67m",
 	Version:       "1.0.0",
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	// Args:          cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var isSetup bool
 
 		if cmd.Flags().Changed("setup") {
-			fmt.Println("Looks like this is your first AFK run, running setup wizard")
 			isSetup = true
 		}
 
@@ -49,25 +47,31 @@ var rootCmd = &cobra.Command{
 			return nil
 		}
 
-		if !isSetup && len(args) < 1 || len(args) > 2 {
-			var names []string
-			for name := range config.Presets {
-				names = append(names, name)
+		if !isSetup {
+			if len(args) < 1 || len(args) > 2 {
+				var names []string
+				for name := range config.Presets {
+					names = append(names, name)
+				}
+
+				return fmt.Errorf(
+					"afk invoked without a preset name. \n\nChoose one of your configured presets: [%s]. \nOr create one by running 'afk mypreset'",
+					strings.Join(names, ", "),
+				)
+
+			} else {
+				preset := args[0]
+				var duration string
+
+				if len(args) > 1 {
+					duration = args[1]
+				}
+
+				err = afk.UpdateStatus(preset, duration)
+				if err != nil {
+					return err
+				}
 			}
-
-			return fmt.Errorf("afk invoked without a preset name. \n\nYou have following presets configured: [%s]. \nChoose one or create one by running 'afk mypreset'", strings.Join(names, ", "))
-		}
-
-		preset := args[0]
-		var duration string
-
-		if len(args) > 1 {
-			duration = args[1]
-		}
-
-		err = afk.UpdateStatus(preset, duration)
-		if err != nil {
-			return err
 		}
 
 		return nil
