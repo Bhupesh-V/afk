@@ -7,6 +7,7 @@ import (
 	"afk/internal/secrets"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -48,8 +49,13 @@ var rootCmd = &cobra.Command{
 			return nil
 		}
 
-		if len(args) < 1 || len(args) > 2 {
-			return fmt.Errorf("accepts between 1 and 2 arg(s), received %d", len(args))
+		if !isSetup && len(args) < 1 || len(args) > 2 {
+			var names []string
+			for name := range config.Presets {
+				names = append(names, name)
+			}
+
+			return fmt.Errorf("afk invoked without a preset name. \n\nYou have following presets configured: [%s]. \nChoose one or create one by running 'afk mypreset'", strings.Join(names, ", "))
 		}
 
 		preset := args[0]

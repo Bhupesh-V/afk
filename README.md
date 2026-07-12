@@ -26,11 +26,15 @@ For remote only teams, profile status on collaboration tools like slack is an im
 
 ## Setup
 
+1. Setup your preferred client.
+2. Run `afk -s/--setup` and follow on-screen instructions.
+
 ### Slack
 
 1. Go to the [Slack API Dashboard](https://api.slack.com/apps) and click Create New App (choose From Scratch).
 2. Assign it an initial development workspace (choose whichever).
-3. Navigate to **OAuth & Permissions** in the left sidebar:
+3. Copy the **Client ID** and **Client Secret** (we'll need them later on).
+4. Navigate to **OAuth & Permissions** in the left sidebar:
    1. Scroll down to **Scopes**.
    2. Under **User Token Scopes**, add the specific user scopes that `afk` needs:
       - `users.profile:write`
@@ -39,13 +43,13 @@ For remote only teams, profile status on collaboration tools like slack is an im
         - Reason: `Gives users the ability to update their presence (active, away) across workspaces`
       - `dnd:write`
         - Reason: `Gives users the ability to update their notification settings across workspaces`
-4. Scroll up to Redirect URLs and add the following OAuth callback endpoint
+5. Scroll up to Redirect URLs and add the following OAuth callback endpoint
    ```
    https://localhost:8080/oauth/callback
    ```
-5. In your Slack App Dashboard, click **Manage Distribution** in the left sidebar. 
-6. Complete the Distribute App Checklist.
-7. Under the section **Share Your App with Other Workspaces**, click **Activate Public Distribution**. Do not submit your app to the Slack Marketplace.
+6. In your Slack App Dashboard, click **Manage Distribution** in the left sidebar.
+7. Complete the Distribute App Checklist.
+8. Under the section **Share Your App with Other Workspaces**, click **Activate Public Distribution**. Do not submit your app to the Slack Marketplace.
 
 ## Usage
 
