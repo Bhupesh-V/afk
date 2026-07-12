@@ -32,7 +32,9 @@ func New(config config.Config, slack slack.Slack) Afk {
 }
 
 func (a *afk) UpdateStatus(preset, presetDuration string) error {
-	var text, emoji, duration string
+	var text, emoji, duration, presence string
+	var dnd bool = true
+
 	if val, ok := a.config.Presets[preset]; ok {
 		weekday := time.Now().Weekday()
 
@@ -48,6 +50,9 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 				}
 			}
 		}
+
+		// take from default
+		text = val.Text
 
 		if presetDuration != "" {
 			// priority to CLI value
@@ -68,7 +73,13 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 			}
 		}
 
-		text = val.Text
+		if val.Presence != "" {
+			presence = val.Presence
+		}
+
+		if val.Notifications == "on" {
+			dnd = false
+		}
 
 	} else {
 		fmt.Printf("preset '%s' not found, winging it!", preset)
@@ -82,10 +93,10 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 
 	switch a.config.User.Provider {
 	case entities.PROVIDER_SLACK:
-		err = a.slack.SetUserCustomStatus(
-			text,
-			fmt.Sprintf(":%s:", emoji),
-			time.Now().Add(durationUnix).Unix(),
+		err = a.slack.DispatchStatus(
+			slack.WithStatus(text, emoji, durationUnix),
+			slack.WithPresence(presence),
+			slack.WithNotifications(dnd),
 		)
 		if err != nil {
 			return err

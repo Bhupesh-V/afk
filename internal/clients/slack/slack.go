@@ -2,12 +2,14 @@ package slack
 
 import (
 	slackEntities "afk/internal/clients/slack/entities"
+	"afk/internal/clients/slack/errors"
 	"afk/internal/entities"
 	"afk/internal/secrets"
 	"afk/pkg/security"
 	"bufio"
 	"context"
 	"crypto/tls"
+
 	"fmt"
 	"log"
 	"net/http"
@@ -22,15 +24,47 @@ import (
 
 type Slack interface {
 	Authorize(clientID, clientSecret string) (*slackEntities.SlackMetaData, error)
-	SetUserCustomStatus(text, emoji string, expiration int64) error
 	ClearStatus() error
-	SetPresence(presence string) error
-	ToggleNotifications(enabled bool, minutes int) error
+	DispatchStatus(opts ...Option) error
 }
 
 type slackDep struct {
 	uwTokens map[string]string
 	secrets  secrets.Secret
+}
+
+// statusConfig holds the parameters gathered from the options
+type statusConfig struct {
+	text          string
+	emoji         string
+	expiration    int64
+	presence      string
+	notifications bool
+}
+
+type Option func(*statusConfig)
+
+// WithStatus sets the custom status text, emoji, and expiration
+func WithStatus(text, emoji string, durationUnix time.Duration) Option {
+	return func(c *statusConfig) {
+		c.text = text
+		c.emoji = fmt.Sprintf(":%s:", emoji)
+		c.expiration = time.Now().Add(durationUnix).Unix()
+	}
+}
+
+// WithPresence sets the user presence
+func WithPresence(presence string) Option {
+	return func(c *statusConfig) {
+		c.presence = presence
+	}
+}
+
+// WithNotifications sets DND
+func WithNotifications(dnd bool) Option {
+	return func(c *statusConfig) {
+		c.notifications = dnd
+	}
 }
 
 func New(secrets secrets.Secret, isSetup bool) (Slack, error) {
@@ -110,106 +144,6 @@ func New(secrets secrets.Secret, isSetup bool) (Slack, error) {
 	return deps, nil
 }
 
-func (s *slackDep) SetUserCustomStatus(text, emoji string, expiration int64) error {
-	var wg sync.WaitGroup
-
-	for team, token := range s.uwTokens {
-		teamName := team
-		slackToken := token
-
-		wg.Go(func() {
-			api := slack.New(slackToken)
-
-			err := api.SetUserCustomStatus(text, emoji, expiration)
-			if err != nil {
-				log.Printf("Failed to update status for team %s...: %v", teamName, err)
-				return // Exits this specific concurrent worker task cleanly
-			}
-		})
-	}
-
-	wg.Wait()
-
-	return nil
-}
-
-func (s *slackDep) ClearStatus() error {
-	var wg sync.WaitGroup
-
-	for team, token := range s.uwTokens {
-		teamName := team
-		slackToken := token
-
-		wg.Go(func() {
-			api := slack.New(slackToken)
-
-			err := api.SetUserCustomStatus("", "", 0)
-			if err != nil {
-				log.Printf("Failed to update status for team %s...: %v", teamName, err)
-				return // Exits this specific concurrent worker task cleanly
-			}
-		})
-	}
-
-	wg.Wait()
-
-	return nil
-}
-
-// SetPresence changes visibility presence. Valid values are "auto" or "away".
-func (s *slackDep) SetPresence(presence string) error {
-	var wg sync.WaitGroup
-
-	for team, token := range s.uwTokens {
-		teamName := team
-		slackToken := token
-
-		wg.Go(func() {
-			api := slack.New(slackToken)
-
-			err := api.SetUserPresence(presence)
-			if err != nil {
-				log.Printf("Failed to update presence to %s for team %s: %v", presence, teamName, err)
-				return
-			}
-		})
-	}
-
-	wg.Wait()
-	return nil
-}
-
-// ToggleNotifications handles turning DND off (notifications ON)
-func (s *slackDep) ToggleNotifications(enabled bool, minutes int) error {
-	var wg sync.WaitGroup
-
-	for team, token := range s.uwTokens {
-		teamName := team
-		slackToken := token
-
-		wg.Go(func() {
-			api := slack.New(slackToken)
-
-			var err error
-
-			if minutes > 0 {
-				// snooze until minutes
-				_, err = api.SetSnooze(minutes)
-			} else {
-				_, err = api.EndSnooze()
-			}
-
-			if err != nil {
-				log.Printf("Failed to toggle notifications for team %s: %v", teamName, err)
-				return
-			}
-		})
-	}
-
-	wg.Wait()
-	return nil
-}
-
 func (s *slackDep) Authorize(clientID, clientSecret string) (*slackEntities.SlackMetaData, error) {
 	metadata := &slackEntities.SlackMetaData{}
 	redirectURI := fmt.Sprintf("https://localhost:%d/oauth/callback", entities.SLACK_AUTHORIZER_PORT)
@@ -284,6 +218,127 @@ func (s *slackDep) Authorize(clientID, clientSecret string) (*slackEntities.Slac
 	}
 
 	return metadata, nil
+}
+
+func (s *slackDep) DispatchStatus(opts ...Option) error {
+	var wg sync.WaitGroup
+	var cfg statusConfig
+
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	var mu sync.Mutex
+	collectedErrors := make(errors.TeamErrors)
+
+	// Helper function to safely log errors per team across goroutines
+	addError := func(team string, err error) {
+		mu.Lock()
+		defer mu.Unlock()
+		collectedErrors[team] = append(collectedErrors[team], err)
+	}
+
+	for team, token := range s.uwTokens {
+		teamName := team
+		slackToken := token
+
+		wg.Go(func() {
+			api := slack.New(slackToken)
+
+			var innerWg sync.WaitGroup
+
+			if cfg.emoji != "" || cfg.text != "" {
+				innerWg.Go(func() {
+					err := api.SetUserCustomStatus(cfg.text, cfg.emoji, cfg.expiration)
+					if err != nil {
+						addError(teamName, fmt.Errorf("status update failed: %w", err))
+						return
+					}
+				})
+			}
+
+			if cfg.presence != "" {
+				innerWg.Go(func() {
+					err := api.SetUserPresence(cfg.presence)
+					if err != nil {
+						addError(teamName, fmt.Errorf("presence update failed: %w", err))
+						return
+					}
+				})
+			}
+
+			if !cfg.notifications {
+				innerWg.Go(func() {
+					// send in minutes
+					_, err := api.SetSnooze(int(cfg.expiration))
+					if err != nil {
+						addError(teamName, fmt.Errorf("snooze update failed: %w", err))
+						return
+					}
+				})
+			}
+			innerWg.Wait()
+
+			mu.Lock()
+			_, hasErrors := collectedErrors[teamName]
+			mu.Unlock()
+
+			if !hasErrors {
+				fmt.Printf("Status successfully updated on %s\n", teamName)
+			}
+		})
+	}
+	wg.Wait()
+
+	if len(collectedErrors) > 0 {
+		return collectedErrors
+	}
+
+	return nil
+}
+
+func (s *slackDep) ClearStatus() error {
+	var wg sync.WaitGroup
+
+	for team, token := range s.uwTokens {
+		teamName := team
+		slackToken := token
+
+		wg.Go(func() {
+			api := slack.New(slackToken)
+
+			var innerWg sync.WaitGroup
+
+			innerWg.Go(func() {
+				err := api.SetUserCustomStatus("", "", 0)
+				if err != nil {
+					fmt.Printf("Failed to update status for team %s...: %v", teamName, err)
+					return
+				}
+			})
+
+			innerWg.Go(func() {
+				err := api.SetUserPresence("auto")
+				if err != nil {
+					log.Printf("Failed to update presence for team %s: %v", teamName, err)
+					return
+				}
+			})
+
+			innerWg.Go(func() {
+				_, err := api.EndSnooze()
+				if err != nil {
+					return
+				}
+			})
+			innerWg.Wait()
+
+			fmt.Printf("Status updated on %s\n", teamName)
+		})
+	}
+	wg.Wait()
+
+	return nil
 }
 
 func (s *slackDep) getAppCreds() (string, string, error) {
