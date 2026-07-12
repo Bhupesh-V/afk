@@ -67,7 +67,7 @@ func ParseDuration(input string) (time.Duration, error) {
 	for _, token := range tokens {
 		matches := customDurationRegex.FindStringSubmatch(token)
 		if len(matches) != 3 {
-			return 0, fmt.Errorf("invalid duration component: %q (must be a number followed by w, d, h, or m)", token)
+			return 0, fmt.Errorf("invalid duration component: %q (must be a number followed by [w]eeks, [d]ays, [h]ours, or [m]inutes)", token)
 		}
 
 		// Extract the numeric value (e.g., "30" from "30m")
