@@ -36,3 +36,4 @@ go.work.sum
 .env
 afk
 !afk/
+releases

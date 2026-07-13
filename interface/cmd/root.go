@@ -13,6 +13,7 @@ import (
 )
 
 var setup bool
+var Version string
 var clear bool
 
 var rootCmd = &cobra.Command{
@@ -20,7 +21,7 @@ var rootCmd = &cobra.Command{
 	Short:         "Set AKF availability status across (slack) workspaces",
 	Long:          "afk is a CLI to configure slack status (text, presence and notifcations) across multiple workspaces",
 	Example:       "afk eat 1h\nafk afk 67m",
-	Version:       "1.0.0",
+	Version:       Version,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
