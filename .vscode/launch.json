@@ -11,6 +11,7 @@
         "eat",
         "1h"
       ],
+      "console": "integratedTerminal",
       "preLaunchTask": "Build AFK"
     }
   ]

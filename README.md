@@ -9,9 +9,9 @@ For remote only teams, profile status on collaboration tools like slack is an im
 
 - **Support for multiple (slack) workspaces**
   - No brainer for consultants! 👀
-- **No secrets management & Compliance friendly**.
+- **No secrets management & Compliance friendly**
   - `afk` is completely local. All secrets reamin locked in your system's keychain.
-- **The afk config file is dotfiles friendly**.
+- **The afk config file is [dotfiles friendly](https://github.com/Bhupesh-V/.Varshney/blob/master/.config/afk/config.toml)**
   - Build up as many status presets as you like!
   - The config file is privacy friendly, afk never exposes which workspace(s) you are a part of.
 - **Unified availability status**
@@ -28,18 +28,19 @@ For remote only teams, profile status on collaboration tools like slack is an im
 
 ### Slack
 
-1. Go to the [Slack API Dashboard](https://api.slack.com/apps).
-2. Under Your **App Configuration Tokens**, click Generate Token. Assign it an initial development workspace (choose whichever).
+1. Go to [Slack API Dashboard](https://api.slack.com/apps) on a browser where you are logged in to any slack workspace.
+2. Under Your **App Configuration Tokens**, click *Generate Token*. Assign the only available initial development workspace (don't worry about this).
 3. Copy the **Access Token** (we'll need it later on).
 4. Run `afk --setup`.
 5. Provide the access token you just copied.
 6. Follow on-screen instructions.
 
-#### Enable Multi Workspace Setup
+#### Enable Multi-Workspace Setup
 
-1. In your Slack App Dashboard, choose the "*AFK*" app and click **Manage Distribution** in the left sidebar.
+1. In Slack App Dashboard, choose the automatically created "*AFK*" app and click **Manage Distribution** in the left sidebar.
 2. Complete the Distribute App Checklist.
 3. Under the section **Share Your App with Other Workspaces**, click **Activate Public Distribution**. Do not submit your app to the Slack Marketplace.
+4. Re-run `afk -s`.
 
 ## Usage
 
