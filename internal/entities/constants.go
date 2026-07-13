@@ -20,9 +20,3 @@ const (
 	AFK_CONFIG_DIR_NAME string = "afk"
 	AFK_CONFIG_FILENAME string = "config.toml"
 )
-
-// Slack specific constants
-const (
-	SLACK_MAX_TEXT_LENGTH int = 100
-	SLACK_AUTHORIZER_PORT int = 8080
-)

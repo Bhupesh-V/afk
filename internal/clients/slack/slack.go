@@ -144,15 +144,12 @@ func New(secrets secrets.Secret, isSetup bool) (Slack, error) {
 
 func (s *slackDep) Authorize(clientID, clientSecret string) (*slackEntities.SlackMetaData, error) {
 	metadata := &slackEntities.SlackMetaData{}
-	redirectURI := fmt.Sprintf("https://localhost:%d/oauth/callback", entities.SLACK_AUTHORIZER_PORT)
-	botScopes := "users:read"
-	scopes := "users.profile:write,users:write,dnd:write"
 
 	base, _ := url.Parse("https://slack.com/oauth/v2/authorize")
 	params := url.Values{}
 	params.Add("client_id", clientID)
-	params.Add("scope", botScopes)
-	params.Add("user_scope", scopes)
+	params.Add("scope", slackEntities.BOT_SCOPES)
+	params.Add("user_scope", slackEntities.USER_SCOPES)
 
 	base.RawQuery = params.Encode()
 
@@ -171,7 +168,7 @@ func (s *slackDep) Authorize(clientID, clientSecret string) (*slackEntities.Slac
 
 	// Create the server object and supply the TLSConfig holding your in-memory certificate
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", entities.SLACK_AUTHORIZER_PORT),
+		Addr:    fmt.Sprintf(":%d", slackEntities.SLACK_AUTHORIZER_PORT),
 		Handler: mux,
 		TLSConfig: &tls.Config{
 			Certificates: []tls.Certificate{tlsCert},
@@ -185,7 +182,7 @@ func (s *slackDep) Authorize(clientID, clientSecret string) (*slackEntities.Slac
 			return
 		}
 
-		resp, err := slack.GetOAuthV2ResponseContext(context.Background(), &http.Client{}, clientID, clientSecret, code, redirectURI)
+		resp, err := slack.GetOAuthV2ResponseContext(context.Background(), &http.Client{}, clientID, clientSecret, code, slackEntities.CALLBACK_URL)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -214,7 +211,7 @@ func (s *slackDep) Authorize(clientID, clientSecret string) (*slackEntities.Slac
 
 	// Pass empty strings since the certs are already injected via srv.TLSConfig
 	if err := srv.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
-		log.Fatalf("ListenAndServe error: %v", err)
+		return nil, fmt.Errorf("error serving oauth callback server %s", err)
 	}
 
 	return metadata, nil
@@ -284,7 +281,7 @@ func (s *slackDep) DispatchStatus(opts ...Option) error {
 			mu.Unlock()
 
 			if !hasErrors {
-				fmt.Printf("Status successfully updated on %s\n", teamName)
+				fmt.Printf("Status updated on %s\n", teamName)
 			}
 		})
 	}
@@ -371,17 +368,11 @@ func (s *slackDep) createSlackApp() (clientId, clientSecret string, err error) {
 		},
 		OAuthConfig: slack.OAuthConfig{
 			RedirectUrls: []string{
-				"https://localhost:8080/oauth/callback",
+				slackEntities.CALLBACK_URL,
 			},
 			Scopes: slack.OAuthScopes{
-				Bot: []string{
-					"users:read",
-				},
-				User: []string{
-					"users.profile:write",
-					"users:write",
-					"dnd:write",
-				},
+				Bot:  strings.Split(slackEntities.BOT_SCOPES, ","),
+				User: strings.Split(slackEntities.USER_SCOPES, ","),
 			},
 		},
 	}

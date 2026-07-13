@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 
+	slackEntities "afk/internal/clients/slack/entities"
+
 	"github.com/mrosales/emoji-go"
 	"github.com/pelletier/go-toml/v2"
 )
@@ -93,7 +95,7 @@ func New() (Config, error) {
 }
 
 func (c *Config) validateText(preset PresetItem, name string) []error {
-	const maxLen = entities.SLACK_MAX_TEXT_LENGTH
+	const maxLen = slackEntities.SLACK_MAX_TEXT_LENGTH
 	var errs []error
 
 	if len(preset.Text) > maxLen {
