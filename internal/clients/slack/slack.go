@@ -154,7 +154,7 @@ func (s *slackDep) Authorize(clientID, clientSecret string) (*slackEntities.Slac
 	base.RawQuery = params.Encode()
 
 	fmt.Println()
-	fmt.Println("--- COPY AND PASTE THIS LINK INTO YOUR BROWSER (where you are logged in from slack) ---")
+	fmt.Println("--- OPEN THIS LINK IN YOUR BROWSER (where you are logged in to slack) ---")
 	fmt.Println(base.String())
 	fmt.Println("--------------------------------------------------")
 
@@ -362,7 +362,7 @@ func (s *slackDep) createSlackApp() (clientId, clientSecret string, err error) {
 		Settings: slack.Settings{},
 		Features: slack.Features{
 			BotUser: slack.BotUser{
-				DisplayName:  "AFK Bot", // Must be more than 0 characters
+				DisplayName:  "AFK Bot",
 				AlwaysOnline: false,
 			},
 		},

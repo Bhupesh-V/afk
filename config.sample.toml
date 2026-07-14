@@ -47,7 +47,20 @@ emojis = ["airplane", "red_car", "auto_rickshaw"]
 [presets.sick]
 text = "Out Sick"
 duration = "2d"
-emojis = ["pill", "mask", "face_with_thermometer", "sneezing_face", "microbe"]
+emojis = [
+    "face_with_head_bandage",
+    "mask",
+    "face_with_thermometer",
+    "sneezing_face",
+    "microbe",
+    "face_with_spiral_eyes",
+    "face_with_bags_under_eyes"
+]
+
+[presets.med]
+text = "Out for a health check-up"
+duration = "3h"
+emojis = ["pill", "hospital", "mending_heart"]
 
 [presets.crime]
 text = "Committing Crime (don't report to HR 🔫)"
@@ -59,7 +72,7 @@ text = "Aura Farming (don't tell my mum)"
 duration = "35m"
 emojis = ["moyai", "male_genie"]
 
-[preset.focus]
-text = "Focusing (Locked In)"
+[preset.zon]
+text = "Focusing (Locked In) - Please don't disturb with any pings/calls. I'll be back"
 duration = "1h"
 emojis = ["dart", "headphones", "brain"]
