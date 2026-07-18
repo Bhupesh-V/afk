@@ -1,0 +1,52 @@
+[user]
+
+provider = "slack"
+
+## Here we define all your status presets
+
+# The preset "eat" can be triggered using command `afk eat`
+[presets.afk]
+text = "AFK"
+duration = "30m"
+emojis = [
+    "four_leaf_clover",
+    "person_in_lotus_position",
+    "sunflower",
+    "potted_plant",
+]
+schedule = [{ day = "Friday", text = "Prayer", emojis = ["seedling"] }]
+
+[presets.ooo]
+text = "Out of Office"
+duration = "3w"
+presence = "away"
+notifications = "off"
+emojis = ["palm_tree", "beach_with_umbrella", "no_entry", "no_bell"]
+
+[presets.travel]
+text = "Travelling"
+duration = "2h"
+emojis = ["airplane", "red_car", "auto_rickshaw"]
+
+[presets.sick]
+text = "Out Sick"
+duration = "2d"
+emojis = [
+    "face_with_head_bandage",
+    "mask",
+    "face_with_thermometer",
+    "sneezing_face",
+    "microbe",
+    "face_with_spiral_eyes",
+    "face_with_bags_under_eyes",
+]
+
+[presets.med]
+text = "Out for a health check-up"
+duration = "3h"
+emojis = ["pill", "hospital", "mending_heart"]
+
+[preset.zon]
+text = "Focusing (Locked In) - Please don't disturb with any pings/calls. I'll be back"
+duration = "1h"
+emojis = ["dart", "headphones", "brain"]

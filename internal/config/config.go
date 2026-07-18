@@ -3,6 +3,7 @@ package config
 import (
 	"afk/internal/entities"
 	"afk/pkg"
+	"embed"
 	"errors"
 	"fmt"
 	"os"
@@ -14,6 +15,9 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
+//go:embed sample.toml
+var DefaultConfig embed.FS
+
 // TODO: use "comment" struct tag on each field
 type Config struct {
 	emojiIndex *emoji.SearchIndex
@@ -22,7 +26,7 @@ type Config struct {
 }
 
 type UserSection struct {
-	Provider string `toml:"provider"`
+	Provider string `toml:"provider" comment:"The messaging provider you use (e.g. slack)"`
 }
 
 type ScheduleItem struct {
@@ -34,7 +38,7 @@ type ScheduleItem struct {
 type PresetItem struct {
 	Text          string         `toml:"text"`
 	Emojis        []string       `toml:"emojis,omitempty"`
-	Duration      string         `toml:"duration,omitempty"`
+	Duration      string         `toml:"duration,omitempty" comment:"Default duration before status resets"`
 	Presence      string         `toml:"presence,omitempty"`
 	Notifications string         `toml:"notifications,omitempty"`
 	Schedule      []ScheduleItem `toml:"schedule,omitempty"`
@@ -74,6 +78,7 @@ func New() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+
 	data, err := os.ReadFile(cfgFile)
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to read config: %w", err)
@@ -87,11 +92,57 @@ func New() (Config, error) {
 
 	cfg.emojiIndex = emoji.NewSearchIndex()
 
+	if cfg.IsEmpty() {
+		data, err = DefaultConfig.ReadFile("sample.toml")
+		if err != nil {
+			return Config{}, fmt.Errorf("failed to read embedded sample.toml: %w", err)
+		}
+
+		// Write the embedded template back to disk for the user's future runs
+		err = os.WriteFile(cfgFile, data, 0600)
+		if err != nil {
+			return Config{}, fmt.Errorf("failed to initialize empty config file: %w", err)
+		}
+
+		// Parse the fallback config into our struct
+		err = toml.Unmarshal(data, &cfg)
+		if err != nil {
+			return Config{}, fmt.Errorf("failed to unmarshal default config: %w", err)
+		}
+	}
+
 	if err := cfg.Validate(); err != nil {
 		return Config{}, fmt.Errorf("afk config validation failed:\n%w", err)
 	}
 
 	return cfg, nil
+}
+
+// Write marshals the current Config back to the config file.
+func (c *Config) Write() error {
+	cfgFile, err := pkg.GetConfigPath(entities.AFK_CONFIG_FILENAME)
+	if err != nil {
+		return fmt.Errorf("failed to get config path: %w", err)
+	}
+
+	data, err := toml.Marshal(c)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config to TOML: %w", err)
+	}
+
+	// Write the byte array to the file
+	// 0600 permissions ensure only the owner can read/write this configuration file
+	err = os.WriteFile(cfgFile, data, 0600)
+	if err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	return nil
+}
+
+// IsEmpty returns true if the configuration has no provider and no presets.
+func (c *Config) IsEmpty() bool {
+	return c.User.Provider == "" && len(c.Presets) == 0
 }
 
 func (c *Config) validateText(preset PresetItem, name string) []error {

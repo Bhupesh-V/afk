@@ -13,9 +13,9 @@ For remote only teams, profile status on collaboration tools like slack is an im
   - `afk` is completely local. All secrets reamin locked in your system's keychain.
 - **The afk config file is [dotfiles friendly](https://github.com/Bhupesh-V/.Varshney/blob/master/.config/afk/config.toml)**
   - Build up as many status presets as you like!
-  - The config file is privacy friendly, afk never exposes which workspace(s) you are a part of.
+  - The config is also privacy friendly, afk never exposes which workspace(s) you are a part of.
 - **Unified availability status**
-  - `afk` forces the user to club things like, notifications, presence and status elements under [one status preset](https://github.com/Bhupesh-V/afk/blob/main/config.sample.toml#L35-L40) config.
+  - `afk` forces the user to club things like, `notifications`, `presence` and `status` elements under [one status preset](https://github.com/Bhupesh-V/afk/blob/main/config.sample.toml#L35-L40) config.
 
 ## Why not?
 

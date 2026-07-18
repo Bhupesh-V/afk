@@ -8,8 +8,14 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"os"
 	"strings"
 	"time"
+
+	"github.com/bhupesh-v/promptui"
+	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
+	emojilib "github.com/mrosales/emoji-go"
 )
 
 type Afk interface {
@@ -82,8 +88,90 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 		}
 
 	} else {
-		fmt.Printf("preset '%s' not found, winging it!", preset)
-		// TODO create new one by starting a questionaire
+		fmt.Printf("Preset '%s' not found, winging it!\n\n", preset)
+
+		// Gather Status Text & Duration (standard huh form)
+		var firstFields []huh.Field
+		firstFields = append(firstFields,
+			huh.NewInput().
+				Title("Status Text").
+				Placeholder("Going on a walk...").
+				Value(&text),
+		)
+
+		if presetDuration != "" {
+			duration = presetDuration
+		} else {
+			firstFields = append(firstFields,
+				huh.NewInput().
+					Title("Duration").
+					Placeholder("e.g., 30m, 1h, 2h30m").
+					Value(&duration).
+					Validate(func(str string) error {
+						_, err := pkg.ParseDuration(duration)
+						if err != nil {
+							return err
+						}
+						return nil
+					}),
+			)
+		}
+
+		if err := huh.NewForm(huh.NewGroup(firstFields...)).Run(); err != nil {
+			return fmt.Errorf("failed to collect status text or duration: %w", err)
+		}
+
+		allEmojis := emojilib.All
+
+		var emojiDisplayList []string
+		for _, e := range allEmojis {
+			emojiDisplayList = append(emojiDisplayList, fmt.Sprintf(" %s : %s", e.Character, e.Name))
+		}
+
+		theme := huh.ThemeCharm()
+		titleStyle := lipgloss.NewStyle().
+			Foreground(theme.Focused.Title.GetForeground()).
+			Bold(true)
+		arrowStyle := lipgloss.NewStyle().Foreground(
+			theme.Focused.TextInput.Prompt.GetForeground())
+
+		// Style promptui to mimic the Charm Huh design language
+		templates := &promptui.SelectTemplates{
+			Label:       "{{ . }}",
+			Active:      fmt.Sprintf("%s {{ . }}", arrowStyle.Render(">")),
+			SearchLabel: titleStyle.Render("Choose Emoji 🔍︎ "),
+		}
+
+		prompt := promptui.Select{
+			Label:             " ",
+			Items:             emojiDisplayList,
+			StartInSearchMode: true,
+			Size:              10, // Height
+			Templates:         templates,
+			HideSelected:      true,
+			Stdout:            &pkg.NoBellWriter{Writer: os.Stdout},
+
+			Searcher: func(input string, index int) bool {
+				item := strings.ToLower(emojiDisplayList[index])
+				input = strings.ToLower(input)
+
+				inputIdx := 0
+				for i := 0; i < len(item); i++ {
+					if inputIdx < len(input) && item[i] == input[inputIdx] {
+						inputIdx++
+					}
+				}
+				return inputIdx == len(input)
+			},
+		}
+
+		// Launch promptui selection screen
+		idx, _, err := prompt.Run()
+		if err != nil {
+			return fmt.Errorf("emoji selection canceled or failed: %w", err)
+		}
+
+		emoji = allEmojis[idx].Name
 	}
 
 	durationUnix, err := pkg.ParseDuration(duration)
@@ -102,6 +190,8 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 			return err
 		}
 	}
+
+	// TODO: update config
 
 	return nil
 }
