@@ -13,7 +13,7 @@ import (
 )
 
 var setup bool
-var Version string
+var Version string = "dev"
 var clear bool
 
 var rootCmd = &cobra.Command{
