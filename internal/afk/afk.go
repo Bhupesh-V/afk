@@ -97,8 +97,15 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 		firstFields = append(firstFields,
 			huh.NewInput().
 				Title("Status Text").
+				Prompt("» ").
 				Placeholder("Going on a walk...").
-				Value(&text),
+				Value(&text).
+				Validate(func(str string) error {
+					if len(str) > 100 {
+						return fmt.Errorf("text exceeds max length of %d (got %d chars)", 100, len(str))
+					}
+					return nil
+				}),
 		)
 
 		if presetDuration != "" {
@@ -107,6 +114,7 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 			firstFields = append(firstFields,
 				huh.NewInput().
 					Title("Duration").
+					Prompt("» ").
 					Placeholder("e.g., 30m, 1h, 2h30m").
 					Value(&duration).
 					Validate(func(str string) error {
@@ -119,7 +127,7 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 			)
 		}
 
-		if err := huh.NewForm(huh.NewGroup(firstFields...)).Run(); err != nil {
+		if err := huh.NewForm(huh.NewGroup(firstFields...).WithTheme(entities.MonokaiRetroTheme())).Run(); err != nil {
 			return fmt.Errorf("failed to collect status text or duration: %w", err)
 		}
 
@@ -130,14 +138,14 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 			emojiDisplayList = append(emojiDisplayList, fmt.Sprintf(" %s : %s", e.Character, e.Name))
 		}
 
-		theme := huh.ThemeCharm()
+		theme := entities.MonokaiRetroTheme()
 		titleStyle := lipgloss.NewStyle().Foreground(theme.Focused.Title.GetForeground()).Bold(true)
 		arrowStyle := lipgloss.NewStyle().Foreground(theme.Focused.TextInput.Prompt.GetForeground())
 
 		// Style promptui to mimic the Charm Huh design language
 		templates := &promptui.SelectTemplates{
 			Label:       "{{ . }}",
-			Active:      fmt.Sprintf("%s {{ . }}", arrowStyle.Render(">")),
+			Active:      fmt.Sprintf("%s {{ . }}", arrowStyle.Render("»")),
 			SearchLabel: titleStyle.Render("Choose Emoji 🔍︎ "),
 		}
 
