@@ -15,14 +15,16 @@ For remote only teams, profile status on collaboration tools like slack is an im
   - Build up as many status presets as you like!
   - The config is also privacy friendly, afk never exposes which workspace(s) you are a part of.
 - **Unified availability status**
-  - `afk` forces the user to club things like, `notifications`, `presence` and `status` elements under [one status preset](https://github.com/Bhupesh-V/afk/blob/main/config.sample.toml#L35-L40) config.
+  - `afk` config club things like `status`, `presence` and `dnd` elements under [one status preset](https://github.com/Bhupesh-V/afk/blob/main/internal/config/sample.toml#L31-L42) config.
 
 ## Why not?
 
 - Initial friction while setting up the app (see [setup](#setup)) in workspaces you want to operate on.
 - Possible disapproval by slack workspace admins.
-  - Admins can kick any app, I recommend not telling them in advance, if they find it, explain why you need it (check readme header).
-- Workspace App Limit, For FREE plan, slack has a limit of 10 apps, if you are in luck, you can setup afk. For Pro/Enterprise plans, there's no limit. However, I recommend not talking about `afk` to your colleagues (imagine 100 afk-bots on a slack workspace 😬)
+  - Slack Admins can kick any app, I recommend not telling them in advance, if they find it, explain why you need it (check readme header).
+- Slack Workspace App Limit
+  - For FREE plan, slack has a limit of 10 apps, if you are in luck, you can setup afk. Although you can bypass this by creating your own free workspace.
+  - For Pro/Enterprise plans, there's no limit. However, I recommend not talking about `afk` to your colleagues (imagine 100 afk-bots on a slack workspace 😬)
 
 ## Setup
 
@@ -48,33 +50,29 @@ For remote only teams, profile status on collaboration tools like slack is an im
 
 > Note: you can build your own status presets, `lunch` below is just an example.
 
-Set lunch status, afk will read expiration default duration from your config
-
-```
-afk lunch
-```
-
 afk with custom expiration time, this will be **automatically saved for future `afk lunch` invocations**.
 
 ```
 afk lunch 67m
 ```
 
-Going on a random break?
+Set lunch status, afk will read expiration default duration from your config
 
 ```
-afk break 67m
+afk lunch
 ```
 
 ### Back online
 
-AFK has a `-c\--clear` flag that can be used if you are back early or didn't set an expiration time earlier.
+afk has a `-c\--clear` flag that can be used if you are back early or didn't set an expiration time earlier.
 
 ```
 afk -c
 ```
 
-## Future
+## Config
 
-- Support for Microsoft Teams (bleh)
-- Support for Mattermost
+afk ships with some default presets, modify them to your liking by editing the config file:
+
+- Linux/MacOS: `.config/afk/config.toml`
+- Windows: `C:\Users\<UserName>\AppData\Roaming\afk\config.toml`
