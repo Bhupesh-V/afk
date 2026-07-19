@@ -26,6 +26,10 @@ For remote only teams, profile status on collaboration tools like slack is an im
   - For FREE plan, slack has a limit of 10 apps, if you are in luck, you can setup afk. Although you can bypass this by creating your own free workspace.
   - For Pro/Enterprise plans, there's no limit. However, I recommend not talking about `afk` to your colleagues (imagine 100 afk-bots on a slack workspace 😬)
 
+## Install
+
+Grab the binary from [releases](https://github.com/Bhupesh-V/afk/releases).
+
 ## Setup
 
 ### Slack
