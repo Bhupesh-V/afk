@@ -90,6 +90,8 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 	} else {
 		fmt.Printf("Preset '%s' not found, winging it!\n\n", preset)
 
+		// TODO move to interface/cmd
+
 		// Gather Status Text & Duration (standard huh form)
 		var firstFields []huh.Field
 		firstFields = append(firstFields,
@@ -129,11 +131,8 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 		}
 
 		theme := huh.ThemeCharm()
-		titleStyle := lipgloss.NewStyle().
-			Foreground(theme.Focused.Title.GetForeground()).
-			Bold(true)
-		arrowStyle := lipgloss.NewStyle().Foreground(
-			theme.Focused.TextInput.Prompt.GetForeground())
+		titleStyle := lipgloss.NewStyle().Foreground(theme.Focused.Title.GetForeground()).Bold(true)
+		arrowStyle := lipgloss.NewStyle().Foreground(theme.Focused.TextInput.Prompt.GetForeground())
 
 		// Style promptui to mimic the Charm Huh design language
 		templates := &promptui.SelectTemplates{
@@ -191,7 +190,19 @@ func (a *afk) UpdateStatus(preset, presetDuration string) error {
 		}
 	}
 
-	// TODO: update config
+	// save the preset if one doesn't exist
+	if _, ok := a.config.Presets[preset]; !ok {
+		a.config.Presets[preset] = config.PresetItem{
+			Text:     text,
+			Emojis:   []string{emoji},
+			Duration: duration,
+			Presence: presence,
+		}
+		err = a.config.Write()
+		if err != nil {
+			return fmt.Errorf("failed to update afk config with preset [%s]: %v", preset, err)
+		}
+	}
 
 	return nil
 }

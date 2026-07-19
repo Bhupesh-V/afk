@@ -18,11 +18,10 @@ import (
 //go:embed sample.toml
 var DefaultConfig embed.FS
 
-// TODO: use "comment" struct tag on each field
 type Config struct {
-	emojiIndex *emoji.SearchIndex
-	User       UserSection           `toml:"user"`
-	Presets    map[string]PresetItem `toml:"presets"`
+	emojiMap map[string]emoji.Info
+	User     UserSection           `toml:"user"`
+	Presets  map[string]PresetItem `toml:"presets"`
 }
 
 type UserSection struct {
@@ -32,16 +31,16 @@ type UserSection struct {
 type ScheduleItem struct {
 	Day    string   `toml:"day"`
 	Text   string   `toml:"text,omitempty"`
-	Emojis []string `toml:"emojis,omitempty"`
+	Emojis []string `toml:"emojis,omitempty" multiline:"true"`
 }
 
 type PresetItem struct {
 	Text          string         `toml:"text"`
-	Emojis        []string       `toml:"emojis,omitempty"`
-	Duration      string         `toml:"duration,omitempty" comment:"Default duration before status resets"`
+	Emojis        []string       `toml:"emojis,omitempty" multiline:"true"`
+	Duration      string         `toml:"duration,omitempty"`
 	Presence      string         `toml:"presence,omitempty"`
 	Notifications string         `toml:"notifications,omitempty"`
-	Schedule      []ScheduleItem `toml:"schedule,omitempty"`
+	Schedule      []ScheduleItem `toml:"schedule,omitempty" inline:"true"`
 }
 
 // Validate ensures that no text field in defaults or schedules exceeds 100 characters.
@@ -90,7 +89,18 @@ func New() (Config, error) {
 		return Config{}, fmt.Errorf("afk config read failed:\n%w", err)
 	}
 
-	cfg.emojiIndex = emoji.NewSearchIndex()
+	emojiLookup := make(map[string]emoji.Info)
+	for _, de := range emoji.All {
+		// Map by the main name
+		emojiLookup[de.Name] = de
+
+		// Map by all alternate names as well
+		for _, name := range de.AlternateNames {
+			emojiLookup[name] = de
+		}
+	}
+
+	cfg.emojiMap = emojiLookup
 
 	if cfg.IsEmpty() {
 		data, err = DefaultConfig.ReadFile("sample.toml")
@@ -118,23 +128,25 @@ func New() (Config, error) {
 	return cfg, nil
 }
 
-// Write marshals the current Config back to the config file.
+// Write marshals the current Config back to the config file with proper formatting.
 func (c *Config) Write() error {
 	cfgFile, err := pkg.GetConfigPath(entities.AFK_CONFIG_FILENAME)
 	if err != nil {
 		return fmt.Errorf("failed to get config path: %w", err)
 	}
 
-	data, err := toml.Marshal(c)
+	file, err := os.OpenFile(cfgFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		return fmt.Errorf("failed to marshal config to TOML: %w", err)
+		return fmt.Errorf("failed to open config file: %w", err)
 	}
+	defer file.Close()
 
-	// Write the byte array to the file
-	// 0600 permissions ensure only the owner can read/write this configuration file
-	err = os.WriteFile(cfgFile, data, 0600)
+	encoder := toml.NewEncoder(file)
+	encoder.SetArraysMultiline(true) // Multi-line arrays
+
+	err = encoder.Encode(c)
 	if err != nil {
-		return fmt.Errorf("failed to write config file: %w", err)
+		return fmt.Errorf("failed to write and format config: %w", err)
 	}
 
 	return nil
@@ -178,21 +190,8 @@ func (c *Config) validateEmojis(preset PresetItem, name string) []error {
 		emojis = append(emojis, sch.Emojis...)
 	}
 
-	// search them in our dataset
 	for _, e := range emojis {
-		info := c.emojiIndex.Search(e, emoji.WithMaxDistance(0), emoji.WithLimit(1))
-
-		exactMatchFound := false
-		if len(info) > 0 {
-			for _, name := range info[0].AlternateNames {
-				if name == e {
-					exactMatchFound = true
-					break
-				}
-			}
-		}
-
-		if !exactMatchFound {
+		if _, found := c.emojiMap[e]; !found {
 			errs = append(errs, fmt.Errorf("invalid emoji [%s] on preset [%s]", e, name))
 		}
 	}
